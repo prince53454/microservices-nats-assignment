@@ -163,6 +163,7 @@ microservices-nats-assignment/
 │   ├── src/
 │   │   ├── config/        # env validation, logger
 │   │   ├── docs/          # OpenAPI spec
+│   │   ├── lib/           # vendored constants/errors/responses (self-contained serverless deploys)
 │   │   ├── middleware/    # auth, rate limiter, request logger
 │   │   ├── routes/        # public route table + proxies
 │   │   ├── services/      # proxy factory

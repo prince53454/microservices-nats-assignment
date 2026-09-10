@@ -1,5 +1,5 @@
 const { RateLimiterMemory } = require('rate-limiter-flexible');
-const { ApiError } = require('../../../shared/utils/ApiError');
+const { ApiError } = require('../lib/ApiError');
 const env = require('../config/env');
 
 /**

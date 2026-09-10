@@ -1,6 +1,6 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const { sendError } = require('../../../shared/utils/responses');
-const { ERROR_CODES } = require('../../../shared/constants');
+const { sendError } = require('../lib/responses');
+const { ERROR_CODES } = require('../lib/constants');
 const env = require('../config/env');
 const logger = require('../config/logger');
 

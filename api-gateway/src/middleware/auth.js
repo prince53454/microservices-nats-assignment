@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
-const { ApiError } = require('../../../shared/utils/ApiError');
+const { ApiError } = require('../lib/ApiError');
 
 /**
  * Gateway-side JWT verification. The gateway validates the token and forwards
