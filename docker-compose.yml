@@ -1,0 +1,151 @@
+version: "3.9"
+
+# One public entrypoint: the API Gateway on :3000.
+# Everything else (services, databases, NATS) is only reachable on the
+# internal Docker network.
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  depends_on:
+    nats:
+      condition: service_healthy
+    mongodb-user:
+      condition: service_healthy
+    mongodb-notification:
+      condition: service_healthy
+
+services:
+  # ---------------- Public entrypoint ----------------
+  api-gateway:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "${GATEWAY_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      USER_SERVICE_URL: http://user-service:4001
+      NOTIFICATION_SERVICE_URL: http://notification-service:4002
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------- Backend services (internal only) ----------------
+  user-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    expose:
+      - "4001"
+    environment:
+      NODE_ENV: production
+      PORT: 4001
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      MONGO_URI: mongodb://mongodb-user:27017/users
+      NATS_URL: nats://nats:4222
+      NATS_USER: appuser
+      NATS_PASSWORD: ${NATS_PASSWORD:?set NATS_PASSWORD in .env}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      mongodb-user:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  notification-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    expose:
+      - "4002"
+    environment:
+      NODE_ENV: production
+      PORT: 4002
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      MONGO_URI: mongodb://mongodb-notification:27017/notifications
+      NATS_URL: nats://nats:4222
+      NATS_USER: appuser
+      NATS_PASSWORD: ${NATS_PASSWORD:?set NATS_PASSWORD in .env}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      mongodb-notification:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4002/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------- Infrastructure ----------------
+  nats:
+    image: nats:2.10-alpine
+    container_name: nats
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ./nats/nats.conf:/etc/nats/nats.conf:ro
+      - nats-data:/data
+    expose:
+      - "4222"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongodb-user:
+    image: mongo:7
+    container_name: mongodb-user
+    command: ["--quiet"]
+    volumes:
+      - mongo-user-data:/data/db
+    expose:
+      - "27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mongodb-notification:
+    image: mongo:7
+    container_name: mongodb-notification
+    command: ["--quiet"]
+    volumes:
+      - mongo-notification-data:/data/db
+    expose:
+      - "27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  mongo-user-data:
+  mongo-notification-data:
+  nats-data:

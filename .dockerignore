@@ -1,0 +1,13 @@
+# Keep Docker build contexts small: only package.json, src/ and shared/ are copied.
+node_modules
+**/node_modules
+.git
+.gitignore
+.env
+**/.env
+**/.env.example
+**/test
+**/coverage
+*.md
+postman_collection.json
+docker-compose.yml

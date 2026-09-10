@@ -1,0 +1,10 @@
+{
+  "name": "@microservices/shared",
+  "version": "1.0.0",
+  "description": "Shared constants, event schemas, error classes and helpers for the microservices assignment",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "joi": "^17.13.3"
+  }
+}

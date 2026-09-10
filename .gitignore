@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Environment files (only .env.example files are committed)
+.env
+*.env
+!.env.example
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.code-workspace
+
+# Local demo artifacts
+mongod-demo-data/
+
+# Agent tooling (run docs, preview logs) — not part of the project
+.freebuff/
+
+# Docker
+docker-compose.override.yml
