@@ -21,9 +21,13 @@ const envSchema = Joi.object({
 const { value: env, error } = envSchema.validate(process.env, { abortEarly: false });
 
 if (error) {
+  // Throw rather than process.exit so serverless logs show WHICH variable is
+  // missing instead of a bare FUNCTION_INVOCATION_FAILED.
   // eslint-disable-next-line no-console -- logger cannot exist before env is valid
   console.error('Invalid environment variables:', error.details.map((d) => d.message).join(', '));
-  process.exit(1);
+  throw new Error(
+    `Invalid environment variables: ${error.details.map((d) => d.message).join(', ')}`
+  );
 }
 
 module.exports = {
