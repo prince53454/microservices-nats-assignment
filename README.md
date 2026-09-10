@@ -1,5 +1,7 @@
 # Microservices Assignment — User + Notification + API Gateway
 
+[![CI](https://github.com/prince53454/microservices-nats-assignment/actions/workflows/ci.yml/badge.svg)](https://github.com/prince53454/microservices-nats-assignment/actions/workflows/ci.yml)
+
 A production-style microservices backend built with **Node.js (JavaScript only)**, **Express**, **NATS JetStream**, **MongoDB/Mongoose** and **Docker Compose**.
 
 - **API Gateway** — the single public entrypoint (`http://localhost:3000`): routing, JWT verification, rate limiting, request logging, Swagger docs.
