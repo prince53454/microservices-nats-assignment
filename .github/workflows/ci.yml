@@ -49,4 +49,9 @@ jobs:
           docker build -f notification-service/Dockerfile -t notification-service:ci .
 
       - name: Validate docker-compose config
+        # Dummy secrets satisfy the compose file's required-variable checks
+        # (locally, a real .env provides them and compose fails fast without one).
+        env:
+          JWT_SECRET: ci-dummy-secret-ci-dummy-secret-32ch
+          NATS_PASSWORD: ci-dummy-nats-password
         run: docker compose config --quiet
