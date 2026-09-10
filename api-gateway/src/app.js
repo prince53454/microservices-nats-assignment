@@ -3,7 +3,8 @@ const helmet = require('helmet');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const { notFoundHandler, errorHandler } = require('../../shared/middleware');
-const { sendSuccess } = require('../../shared/utils/responses');
+const { sendSuccess, sendError } = require('../../shared/utils/responses');
+const { ERROR_CODES } = require('../../shared/constants');
 const openapiSpec = require('./docs/openapi');
 const env = require('./config/env');
 const { requestLogger } = require('./middleware/requestLogger');
@@ -34,10 +35,25 @@ function createApp() {
   // Apply the rate limit to every /api route.
   app.use('/api', rateLimit);
 
-  // Mount proxy routes BEFORE express.json: the proxies stream request bodies
-  // through to the backend services untouched. Parsing here would consume the
-  // stream and break POST/PATCH forwarding.
-  app.use('/api', routes);
+  if (env.missingEnv.length === 0) {
+    // Mount proxy routes BEFORE express.json: the proxies stream request bodies
+    // through to the backend services untouched. Parsing here would consume the
+    // stream and break POST/PATCH forwarding.
+    app.use('/api', routes);
+  } else {
+    // Degraded mode: boot succeeded but required env vars are missing. Instead
+    // of crashing (which a visitor sees only as FUNCTION_INVOCATION_FAILED),
+    // every API call gets a 503 naming the missing variables.
+    app.use('/api', (req, res) => {
+      sendError(
+        res,
+        503,
+        ERROR_CODES.GATEWAY_NOT_CONFIGURED,
+        'Gateway is not configured: required environment variables are missing. See /healthz/env.',
+        env.missingEnv.map((name) => ({ field: name, message: `${name} is not set` }))
+      );
+    });
+  }
 
   app.use(express.json({ limit: '100kb' }));
 
@@ -47,6 +63,16 @@ function createApp() {
 
   // Health endpoints (public, not rate limited).
   app.get('/health', (req, res) => sendSuccess(res, { status: 'ok', service: 'api-gateway' }));
+
+  // Deployment diagnostics: reports ONLY which required variables are missing
+  // (never their values, and never the optional ones), so a failed cloud
+  // deployment can be fixed from the browser alone.
+  app.get('/healthz/env', (req, res) =>
+    sendSuccess(res, {
+      status: env.missingEnv.length === 0 ? 'ok' : 'degraded',
+      service: 'api-gateway',
+      missingEnv: env.missingEnv,
+    }));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

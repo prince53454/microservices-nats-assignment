@@ -11,6 +11,7 @@ jest.mock('../src/config/env', () => ({
   rateLimitMax: 3, // low limit so tests can trigger 429
   proxyTimeoutMs: 5000,
   trustProxy: 1,
+  missingEnv: [], // healthy config in tests
   logLevel: 'error',
 }));
 

@@ -24,14 +24,13 @@ const envSchema = Joi.object({
 const { value: env, error } = envSchema.validate(process.env, { abortEarly: false });
 
 if (error) {
-  // Throwing (instead of process.exit) keeps the failure legible on serverless
-  // platforms: the missing variable names appear in the function logs instead
-  // of a bare FUNCTION_INVOCATION_FAILED.
+  // On serverless, a crash here shows only as FUNCTION_INVOCATION_FAILED, so
+  // the gateway instead boots in a degraded state: /health and /healthz/env
+  // stay up and every proxied route answers 503 GATEWAY_NOT_CONFIGURED naming
+  // the missing variables. processEnv problems stay visible in the logs.
   // eslint-disable-next-line no-console -- logger cannot exist before env is valid
-  console.error('Invalid environment variables:', error.details.map((d) => d.message).join(', '));
-  throw new Error(
-    `Invalid environment variables: ${error.details.map((d) => d.message).join(', ')}`
-  );
+  console.error('Gateway environment is not configured:',
+    error.details.map((d) => d.message).join(', '));
 }
 
 module.exports = {
@@ -46,4 +45,6 @@ module.exports = {
   internalApiKey: env.INTERNAL_API_KEY,
   trustProxy: env.TRUST_PROXY,
   logLevel: env.LOG_LEVEL,
+  /** Names of required variables that failed validation (empty = healthy). */
+  missingEnv: error ? error.details.map((d) => d.path.join('.')) : [],
 };

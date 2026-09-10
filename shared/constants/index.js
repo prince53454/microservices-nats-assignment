@@ -35,6 +35,9 @@ const ERROR_CODES = {
   UPSTREAM_UNAVAILABLE: 'UPSTREAM_UNAVAILABLE',
   UPSTREAM_ERROR: 'UPSTREAM_ERROR',
   EVENT_INVALID: 'EVENT_INVALID',
+  // Gateway booted but a required env var is missing; the affected route is
+  // disabled (see /healthz/env for what is configured).
+  GATEWAY_NOT_CONFIGURED: 'GATEWAY_NOT_CONFIGURED',
 };
 
 module.exports = {
